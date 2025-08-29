@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cermin Ajaib</title>
+    <style>
+      :root {
+        --bg1: #e0c3fc;
+        --bg2: #8ec5fc;
+        --text: #202020;
+        --white: #ffffff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(to bottom, var(--bg1), var(--bg2));
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        overflow: hidden;
+      }
+
+      .mirror-container {
+        position: relative;
+        width: 50vw;
+        height: 80vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: filter 0.5s ease;
+      }
+
+      .mirror-bg {
+        position: absolute;
+        inset: 0;
+        background: url("mirror.png") no-repeat center;
+        background-size: contain;
+        transition: filter 0.5s ease;
+        z-index: 1;
+      }
+      .mirror-bg.blurred {
+        filter: blur(6px) brightness(0.8);
+      }
+
+      .mirror-text {
+        position: absolute;
+        top: 55%;
+        width: 34%;
+        text-align: center;
+        font-size: clamp(1rem, 2.5vw, 1.15rem);
+        color: var(--text);
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+        opacity: 0;
+        transition: opacity 2s ease;
+        pointer-events: none;
+        z-index: 2;
+      }
+      .mirror-text.show {
+        opacity: 1;
+      }
+
+      /* Animasi */
+      .fade-out {
+        animation: fadeOut 3s forwards;
+      }
+      .fade-in {
+        animation: fadeIn 3s forwards;
+      }
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      /* Ripple */
+      .ripple {
+        position: absolute;
+        border-radius: 50%;
+        transform: scale(0);
+        animation: ripple 0.6s linear;
+        background: rgba(255, 255, 255, 0.6);
+        pointer-events: none;
+        z-index: 5;
+      }
+      @keyframes ripple {
+        to {
+          transform: scale(4);
+          opacity: 0;
+        }
+      }
+
+      /* Hint */
+      .hint-text {
+        margin-top: 1rem;
+        font-size: clamp(0.9rem, 2vw, 1.1rem);
+        color: var(--white);
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          opacity: 0.7;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.7;
+        }
+      }
+
+      /* QUIZ */
+      .quiz-container {
+        position: absolute;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10; /* ✅ di atas mirror */
+      }
+      .quiz-card {
+        width: min(420px, 80%);
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        padding: 20px 22px;
+        text-align: center;
+        backdrop-filter: blur(8px);
+        animation: pop 0.35s ease-out;
+      }
+      @keyframes pop {
+        from {
+          transform: scale(0.95);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      .quiz-title {
+        font-weight: 600;
+        margin-bottom: 14px;
+      }
+      .quiz-options {
+        display: grid;
+        gap: 10px;
+      }
+      .quiz-btn {
+        padding: 12px;
+        border: none;
+        border-radius: 12px;
+        background: #f1f5f9;
+        cursor: pointer;
+        transition: 0.2s;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+      .quiz-btn:active {
+        transform: scale(0.98);
+      }
+
+      /* Popup */
+      .popup-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+      }
+      .popup-overlay.show {
+        display: flex;
+      }
+      .popup {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        padding: 20px;
+        max-width: 500px;
+        text-align: center;
+        animation: pop 0.25s ease-out;
+      }
+      .popup .close-btn {
+        margin-top: 12px;
+        padding: 10px 14px;
+        border: none;
+        border-radius: 12px;
+        background: #111827;
+        color: #fff;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mirror-container" id="mirror">
+      <div class="mirror-bg" id="mirrorBg"></div>
+
+      <div class="mirror-text" id="questionText">
+        Cermin ajaib, kasih tau dong… siapa yang paling cantik?
+      </div>
+      <div class="mirror-text" id="answerText">Ya kamu lah, siapa lagi? 🥰</div>
+
+      <!-- QUIZ -->
+      <div class="quiz-container" id="quiz">
+        <div class="quiz-card">
+          <div class="quiz-title">apakah aku tadi bilang kamu lebih tua?</div>
+          <div class="quiz-options">
+            <button class="quiz-btn" id="opt1">iya😠</button>
+            <button class="quiz-btn" id="opt2">engga dong😘</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hint-text" id="hint">klik cerminnya sayang</div>
+
+    <!-- POPUP -->
+    <div class="popup-overlay" id="popupOverlay">
+      <div class="popup">
+        <p id="popupMessage"></p>
+        <button class="close-btn" id="closePopup">tutup</button>
+      </div>
+    </div>
+
+    <script>
+      const questionText = document.getElementById("questionText");
+      const answerText = document.getElementById("answerText");
+      const mirror = document.getElementById("mirror");
+      const mirrorBg = document.getElementById("mirrorBg");
+      const hint = document.getElementById("hint");
+      const quiz = document.getElementById("quiz");
+
+      const popupOverlay = document.getElementById("popupOverlay");
+      const popupMessage = document.getElementById("popupMessage");
+      const closePopup = document.getElementById("closePopup");
+
+      let state = "question";
+
+      window.addEventListener("load", () => {
+        questionText.classList.add("show");
+      });
+
+      function createRipple(e) {
+        const circle = document.createElement("span");
+        circle.classList.add("ripple");
+        const size = 200;
+        const rect = mirror.getBoundingClientRect();
+        circle.style.width = circle.style.height = size + "px";
+        circle.style.left = e.clientX - rect.left - size / 2 + "px";
+        circle.style.top = e.clientY - rect.top - size / 2 + "px";
+        mirror.appendChild(circle);
+        setTimeout(() => circle.remove(), 600);
+      }
+
+      mirror.addEventListener("click", (e) => {
+        createRipple(e);
+        if (state === "question") {
+          questionText.classList.remove("show");
+          questionText.classList.add("fade-out");
+          setTimeout(() => {
+            questionText.style.display = "none";
+            answerText.classList.add("fade-in", "show");
+            hint.textContent = "klik sekali lagi sayang";
+            state = "answer";
+          }, 3000);
+        } else if (state === "answer") {
+          answerText.classList.remove("show");
+          mirrorBg.classList.add("blurred");
+          quiz.style.display = "flex"; // ✅ quiz muncul
+          hint.style.display = "none";
+          state = "quiz";
+        }
+      });
+
+      // Quiz actions
+      document.getElementById("opt1").addEventListener("click", () => {
+        showPopup(
+          "masa iya aku bilang kamu begitu, engga sayang, kalo kamu tua aku apa dong? fosil? atau artefak? kamu cantik kooo🥰❣️"
+        );
+      });
+      document.getElementById("opt2").addEventListener("click", () => {
+        showPopup(
+          "emang engga, aku cuma ngajak kamu biar punya kebiasaan yang lebih sehat, biar nanti kita bisa sampe tua bareng2 sayang❣"
+        );
+      });
+
+      function showPopup(msg) {
+        popupMessage.textContent = msg;
+        popupOverlay.classList.add("show");
+      }
+      function hidePopup() {
+        popupOverlay.classList.remove("show");
+      }
+      popupOverlay.addEventListener("click", (e) => {
+        if (e.target === popupOverlay) hidePopup();
+      });
+      closePopup.addEventListener("click", hidePopup);
+    </script>
+  </body>
+</html>
